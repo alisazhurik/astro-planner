@@ -1,57 +1,77 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { CalendarIcon, Clock, MapPin, User } from "lucide-react"
-import type { BirthData } from "@/app/page"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { format } from "date-fns"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CalendarIcon, Clock, MapPin, User } from "lucide-react";
+import type { BirthData } from "@/app/page";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { format } from "date-fns";
 
 interface BirthDataFormProps {
-  onSubmit: (data: BirthData) => void
+  onSubmit: (data: BirthData) => void;
 }
 
 export function BirthDataForm({ onSubmit }: BirthDataFormProps) {
-  const [name, setName] = useState("")
-  const [birthMonth, setBirthMonth] = useState("")
-  const [birthDay, setBirthDay] = useState("")
-  const [birthYear, setBirthYear] = useState("")
-  const [timeOfBirth, setTimeOfBirth] = useState("")
-  const [placeOfBirth, setPlaceOfBirth] = useState("")
+  const [name, setName] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [birthDay, setBirthDay] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+  const [timeOfBirth, setTimeOfBirth] = useState("");
+  const [placeOfBirth, setPlaceOfBirth] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (name && birthMonth && birthDay && birthYear && timeOfBirth && placeOfBirth) {
+    e.preventDefault();
+    if (
+      name &&
+      birthMonth &&
+      birthDay &&
+      birthYear &&
+      timeOfBirth &&
+      placeOfBirth
+    ) {
       const dateOfBirth = new Date(
         Number.parseInt(birthYear),
         Number.parseInt(birthMonth) - 1,
-        Number.parseInt(birthDay),
-      )
+        Number.parseInt(birthDay)
+      );
       onSubmit({
         name,
         dateOfBirth,
         timeOfBirth,
         placeOfBirth,
-      })
+      });
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-slate-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-lg bg-white/10 backdrop-blur-sm border-white/20 shadow-2xl">
         <CardHeader className="text-center pb-6">
-          <CardTitle className="text-2xl font-bold text-white">Tell us about yourself</CardTitle>
-          <p className="text-purple-100">We need your birth details to personalize your astro experience</p>
+          <CardTitle className="text-2xl font-bold text-white">
+            Tell us about yourself
+          </CardTitle>
+          <p className="text-purple-100">
+            We need your birth details to personalize your astro experience
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-white flex items-center gap-2">
+              <Label
+                htmlFor="name"
+                className="text-white flex items-center gap-2"
+              >
                 <User className="w-4 h-4" />
                 Name
               </Label>
@@ -103,12 +123,12 @@ export function BirthDataForm({ onSubmit }: BirthDataFormProps) {
                   </SelectTrigger>
                   <SelectContent>
                     {Array.from({ length: 100 }, (_, i) => {
-                      const year = new Date().getFullYear() - i
+                      const year = new Date().getFullYear() - i;
                       return (
                         <SelectItem key={year} value={year.toString()}>
                           {year}
                         </SelectItem>
-                      )
+                      );
                     })}
                   </SelectContent>
                 </Select>
@@ -116,7 +136,10 @@ export function BirthDataForm({ onSubmit }: BirthDataFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="time" className="text-white flex items-center gap-2">
+              <Label
+                htmlFor="time"
+                className="text-white flex items-center gap-2"
+              >
                 <Clock className="w-4 h-4" />
                 Time of Birth
               </Label>
@@ -126,12 +149,14 @@ export function BirthDataForm({ onSubmit }: BirthDataFormProps) {
                 value={timeOfBirth}
                 onChange={(e) => setTimeOfBirth(e.target.value)}
                 className="bg-white/10 border-white/20 text-white"
-                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="place" className="text-white flex items-center gap-2">
+              <Label
+                htmlFor="place"
+                className="text-white flex items-center gap-2"
+              >
                 <MapPin className="w-4 h-4" />
                 Place of Birth
               </Label>
@@ -141,7 +166,6 @@ export function BirthDataForm({ onSubmit }: BirthDataFormProps) {
                 onChange={(e) => setPlaceOfBirth(e.target.value)}
                 placeholder="City, Country"
                 className="bg-white/10 border-white/20 text-white placeholder:text-purple-200"
-                required
               />
             </div>
 
@@ -155,5 +179,5 @@ export function BirthDataForm({ onSubmit }: BirthDataFormProps) {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

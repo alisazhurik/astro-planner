@@ -1,15 +1,25 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Calendar,
   Plus,
@@ -31,25 +41,27 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
-} from "lucide-react"
-import { format, addDays, startOfWeek } from "date-fns"
-import type { BirthData, Task } from "@/app/page"
+} from "lucide-react";
+import { format, addDays, startOfWeek } from "date-fns";
+import type { BirthData, Task } from "@/app/page";
 
 interface TaskListProps {
-  birthData: BirthData
-  tasks: Task[]
-  onAddTask: (task: Omit<Task, "id">) => void
-  onToggleTask: (taskId: string) => void
-  onDeleteTask: (taskId: string) => void
-  onUpdateTask: (taskId: string, updates: Partial<Task>) => void
-  onNavigateToCalendar: () => void
-  onNavigateToProfile: () => void
-  onLogout: () => void
+  birthData: BirthData;
+  tasks: Task[];
+  onAddTask: (task: Omit<Task, "id">) => void;
+  onToggleTask: (taskId: string) => void;
+  onDeleteTask: (taskId: string) => void;
+  onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
+  onNavigateToCalendar: () => void;
+  onNavigateToProfile: () => void;
+  onLogout: () => void;
 }
 
 // AI function for task category prediction
-const predictTaskCategory = (taskText: string): { category: Task["category"]; confidence: number } => {
-  const text = taskText.toLowerCase()
+const predictTaskCategory = (
+  taskText: string
+): { category: Task["category"]; confidence: number } => {
+  const text = taskText.toLowerCase();
 
   // Keywords for each category
   const categoryKeywords = {
@@ -185,71 +197,98 @@ const predictTaskCategory = (taskText: string): { category: Task["category"]; co
       "routine",
       "plan",
     ],
-  }
+  };
 
-  let bestCategory: Task["category"] = "personal"
-  let maxScore = 0
+  let bestCategory: Task["category"] = "personal";
+  let maxScore = 0;
 
   // Calculate scores for each category
   Object.entries(categoryKeywords).forEach(([category, keywords]) => {
-    let score = 0
+    let score = 0;
     keywords.forEach((keyword) => {
       if (text.includes(keyword)) {
-        score += 1
+        score += 1;
         // Extra points if keyword is at the beginning
         if (text.startsWith(keyword)) {
-          score += 0.5
+          score += 0.5;
         }
       }
-    })
+    });
 
     if (score > maxScore) {
-      maxScore = score
-      bestCategory = category as Task["category"]
+      maxScore = score;
+      bestCategory = category as Task["category"];
     }
-  })
+  });
 
   // Calculate confidence (0-100%)
-  const confidence = Math.min(Math.round((maxScore / Math.max(text.split(" ").length * 0.3, 1)) * 100), 95)
+  const confidence = Math.min(
+    Math.round((maxScore / Math.max(text.split(" ").length * 0.3, 1)) * 100),
+    95
+  );
 
-  return { category: bestCategory, confidence: Math.max(confidence, 15) }
-}
+  return { category: bestCategory, confidence: Math.max(confidence, 15) };
+};
 
 // Function to determine zodiac sign
-const getZodiacSign = (birthDate: Date): { sign: string; emoji: string } => {
-  const month = birthDate.getMonth() + 1
-  const day = birthDate.getDate()
+const getZodiacSign = (
+  birthDateInput: Date | string
+): { sign: string; emoji: string } => {
+  const birthDate =
+    typeof birthDateInput === "string"
+      ? new Date(birthDateInput)
+      : birthDateInput;
+  const month = birthDate.getMonth() + 1;
+  const day = birthDate.getDate();
 
-  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return { sign: "Aries", emoji: "♈" }
-  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return { sign: "Taurus", emoji: "♉" }
-  if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return { sign: "Gemini", emoji: "♊" }
-  if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return { sign: "Cancer", emoji: "♋" }
-  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return { sign: "Leo", emoji: "♌" }
-  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return { sign: "Virgo", emoji: "♍" }
-  if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return { sign: "Libra", emoji: "♎" }
-  if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return { sign: "Scorpio", emoji: "♏" }
-  if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return { sign: "Sagittarius", emoji: "♐" }
-  if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return { sign: "Capricorn", emoji: "♑" }
-  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return { sign: "Aquarius", emoji: "♒" }
-  return { sign: "Pisces", emoji: "♓" }
-}
+  if ((month === 3 && day >= 21) || (month === 4 && day <= 19))
+    return { sign: "Aries", emoji: "♈" };
+  if ((month === 4 && day >= 20) || (month === 5 && day <= 20))
+    return { sign: "Taurus", emoji: "♉" };
+  if ((month === 5 && day >= 21) || (month === 6 && day <= 20))
+    return { sign: "Gemini", emoji: "♊" };
+  if ((month === 6 && day >= 21) || (month === 7 && day <= 22))
+    return { sign: "Cancer", emoji: "♋" };
+  if ((month === 7 && day >= 23) || (month === 8 && day <= 22))
+    return { sign: "Leo", emoji: "♌" };
+  if ((month === 8 && day >= 23) || (month === 9 && day <= 22))
+    return { sign: "Virgo", emoji: "♍" };
+  if ((month === 9 && day >= 23) || (month === 10 && day <= 22))
+    return { sign: "Libra", emoji: "♎" };
+  if ((month === 10 && day >= 23) || (month === 11 && day <= 21))
+    return { sign: "Scorpio", emoji: "♏" };
+  if ((month === 11 && day >= 22) || (month === 12 && day <= 21))
+    return { sign: "Sagittarius", emoji: "♐" };
+  if ((month === 12 && day >= 22) || (month === 1 && day <= 19))
+    return { sign: "Capricorn", emoji: "♑" };
+  if ((month === 1 && day >= 20) || (month === 2 && day <= 18))
+    return { sign: "Aquarius", emoji: "♒" };
+  return { sign: "Pisces", emoji: "♓" };
+};
 
 // Function to generate humorous horoscope
-const getPriorityFlag = (priority: Task["priority"]) => {
-  switch (priority) {
-    case "high":
-      return <span className="text-red-600 text-sm">🚩</span>
-    case "medium":
-      return <span className="text-yellow-600 text-sm">🚩</span>
-    case "low":
-      return <span className="text-green-600 text-sm">🚩</span>
-  }
-}
+// const getPriorityFlag = (priority: Task["priority"]) => {
+//   switch (priority) {
+//     case "high":
+//       return <span className="text-red-600 text-sm">🚩</span>;
+//     case "medium":
+//       return <span className="text-yellow-600 text-sm">🚩</span>;
+//     case "low":
+//       return <span className="text-green-600 text-sm">🚩</span>;
+//   }
+// };
 
-const generateAdvancedHoroscope = (zodiacSign: string, name: string, date: Date): string => {
-  const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))
-  const moonPhase = (dayOfYear % 29.5) / 29.5
-  const weekDay = date.getDay()
+const generateAdvancedHoroscope = (
+  zodiacSign: string,
+  name: string,
+  date: Date
+): string => {
+  const dayOfYear = Math.floor(
+    (date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) /
+      (1000 * 60 * 60 * 24)
+  );
+  const moonPhase = (dayOfYear % 29.5) / 29.5;
+  const weekDay = date.getDay();
 
   // Planetary influences
   const planetaryInfluence =
@@ -261,13 +300,15 @@ const generateAdvancedHoroscope = (zodiacSign: string, name: string, date: Date)
       4: "Jupiter",
       5: "Venus",
       6: "Saturn",
-    }[weekDay] || "Sun"
+    }[weekDay] || "Sun";
 
   // Generate unique seed
-  const seed = `${zodiacSign}-${date.toDateString()}`.split("").reduce((a, b) => {
-    a = (a << 5) - a + b.charCodeAt(0)
-    return a & a
-  }, 0)
+  const seed = `${zodiacSign}-${date.toDateString()}`
+    .split("")
+    .reduce((a, b) => {
+      a = (a << 5) - a + b.charCodeAt(0);
+      return a & a;
+    }, 0);
 
   const shorterHoroscopes = {
     Aries: [
@@ -310,12 +351,14 @@ const generateAdvancedHoroscope = (zodiacSign: string, name: string, date: Date)
     Pisces: [
       `🌊 **Mystical compassion flows through you, ${name}** 🌊\n\nNeptune's ethereal energy heightens psychic abilities through ${planetaryInfluence}'s channel. Spiritual connection brings divine guidance and artistic inspiration knows no bounds.\n\n**Focus**: Dream messages and emotional healing through compassionate presence.\n\n**Power Color**: Ocean Blue 🌊\n**Affirmation**: "I am a vessel of divine love transforming the world!"`,
     ],
-  }
+  };
 
-  const signHoroscopes = shorterHoroscopes[zodiacSign as keyof typeof shorterHoroscopes] || shorterHoroscopes["Aries"]
-  const index = Math.abs(seed) % signHoroscopes.length
-  return signHoroscopes[index]
-}
+  const signHoroscopes =
+    shorterHoroscopes[zodiacSign as keyof typeof shorterHoroscopes] ||
+    shorterHoroscopes["Aries"];
+  const index = Math.abs(seed) % signHoroscopes.length;
+  return signHoroscopes[index];
+};
 
 export function TaskList({
   birthData,
@@ -328,16 +371,22 @@ export function TaskList({
   onNavigateToProfile,
   onLogout,
 }: TaskListProps) {
-  const [newTaskText, setNewTaskText] = useState("")
-  const [newTaskCategory, setNewTaskCategory] = useState<Task["category"]>("personal")
-  const [newTaskPriority, setNewTaskPriority] = useState<Task["priority"]>("medium")
-  const [editingTask, setEditingTask] = useState<string | null>(null)
-  const [editText, setEditText] = useState("")
-  const [editCategory, setEditCategory] = useState<Task["category"]>("personal")
-  const [editPriority, setEditPriority] = useState<Task["priority"]>("medium")
-  const [aiPrediction, setAiPrediction] = useState<{ category: Task["category"]; confidence: number } | null>(null)
-  const [isAiSuggested, setIsAiSuggested] = useState(false)
-  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set())
+  const [newTaskText, setNewTaskText] = useState("");
+  const [newTaskCategory, setNewTaskCategory] =
+    useState<Task["category"]>("personal");
+  // const [newTaskPriority, setNewTaskPriority] =
+  //   useState<Task["priority"]>("medium");
+  const [editingTask, setEditingTask] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [editCategory, setEditCategory] =
+    useState<Task["category"]>("personal");
+  // const [editPriority, setEditPriority] = useState<Task["priority"]>("medium");
+  const [aiPrediction, setAiPrediction] = useState<{
+    category: Task["category"];
+    confidence: number;
+  } | null>(null);
+  const [isAiSuggested, setIsAiSuggested] = useState(false);
+  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
 
   const categoryIcons = {
     work: <Briefcase className="w-4 h-4" />,
@@ -346,7 +395,7 @@ export function TaskList({
     creativity: <Palette className="w-4 h-4" />,
     relationships: <Heart className="w-4 h-4" />,
     finance: <DollarSign className="w-4 h-4" />,
-  }
+  };
 
   const categoryColors = {
     work: "bg-blue-100 text-blue-800 border-blue-200",
@@ -355,13 +404,13 @@ export function TaskList({
     creativity: "bg-orange-100 text-orange-800 border-orange-200",
     relationships: "bg-pink-100 text-pink-800 border-pink-200",
     finance: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  }
+  };
 
-  const priorityColors = {
-    low: "bg-gray-100 text-gray-600",
-    medium: "bg-blue-100 text-blue-600",
-    high: "bg-red-100 text-red-600",
-  }
+  // const priorityColors = {
+  //   low: "bg-gray-100 text-gray-600",
+  //   medium: "bg-blue-100 text-blue-600",
+  //   high: "bg-red-100 text-red-600",
+  // };
 
   const getCategoryName = (category: Task["category"]) => {
     const names = {
@@ -371,184 +420,186 @@ export function TaskList({
       creativity: "Creativity",
       relationships: "Relationships",
       finance: "Finance",
-    }
-    return names[category]
-  }
+    };
+    return names[category];
+  };
 
   // AI prediction when task text changes
   useEffect(() => {
     if (newTaskText.trim().length > 3) {
-      const prediction = predictTaskCategory(newTaskText)
-      setAiPrediction(prediction)
+      const prediction = predictTaskCategory(newTaskText);
+      setAiPrediction(prediction);
 
       // Automatically set category only if confidence > 30%
       if (prediction.confidence > 30 && !isAiSuggested) {
-        setNewTaskCategory(prediction.category)
-        setIsAiSuggested(true)
+        setNewTaskCategory(prediction.category);
+        setIsAiSuggested(true);
       }
     } else {
-      setAiPrediction(null)
-      setIsAiSuggested(false)
+      setAiPrediction(null);
+      setIsAiSuggested(false);
     }
-  }, [newTaskText, isAiSuggested])
+  }, [newTaskText, isAiSuggested]);
 
   // Astrological logic for determining favorable days
   const getTaskRecommendations = (category: Task["category"]) => {
-    const today = new Date()
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 })
-    const recommendations = []
+    const today = new Date();
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const recommendations = [];
 
     for (let i = 0; i < 14; i++) {
-      const date = addDays(weekStart, i)
-      const dayOfWeek = date.getDay()
-      const dayOfMonth = date.getDate()
+      const date = addDays(weekStart, i);
+      const dayOfWeek = date.getDay();
+      const dayOfMonth = date.getDate();
 
-      let energy = "neutral"
-      let reason = ""
+      let energy = "neutral";
+      let reason = "";
 
       // Simplified astrological logic for demo
       switch (category) {
         case "work":
           if (dayOfWeek === 2 || dayOfWeek === 4) {
             // Tuesday and Thursday - Mars and Jupiter days
-            energy = "favorable"
-            reason = "Mars gives energy for work"
+            energy = "favorable";
+            reason = "Mars gives energy for work";
           } else if (dayOfWeek === 6) {
             // Saturday
-            energy = "challenging"
-            reason = "Rest day, not for work"
+            energy = "challenging";
+            reason = "Rest day, not for work";
           }
-          break
+          break;
 
         case "creativity":
           if (dayOfWeek === 5 || dayOfWeek === 0) {
             // Friday and Sunday - Venus and Sun days
-            energy = "favorable"
-            reason = "Venus inspires creativity"
+            energy = "favorable";
+            reason = "Venus inspires creativity";
           } else if (dayOfWeek === 1) {
-            energy = "challenging"
-            reason = "Monday - not for creativity"
+            energy = "challenging";
+            reason = "Monday - not for creativity";
           }
-          break
+          break;
 
         case "relationships":
           if (dayOfWeek === 5 || dayOfWeek === 0) {
             // Friday and Sunday
-            energy = "favorable"
-            reason = "Venus favors relationships"
+            energy = "favorable";
+            reason = "Venus favors relationships";
           } else if (dayOfWeek === 2) {
-            energy = "challenging"
-            reason = "Mars can cause conflicts"
+            energy = "challenging";
+            reason = "Mars can cause conflicts";
           }
-          break
+          break;
 
         case "health":
           if (dayOfWeek === 3 || dayOfWeek === 0) {
             // Wednesday and Sunday
-            energy = "favorable"
-            reason = "Mercury and Sun give life force"
+            energy = "favorable";
+            reason = "Mercury and Sun give life force";
           }
-          break
+          break;
 
         case "finance":
           if (dayOfWeek === 4 || dayOfMonth % 8 === 0) {
             // Thursday - Jupiter's day
-            energy = "favorable"
-            reason = "Jupiter brings luck in finances"
+            energy = "favorable";
+            reason = "Jupiter brings luck in finances";
           } else if (dayOfWeek === 6) {
-            energy = "challenging"
-            reason = "Saturn may limit finances"
+            energy = "challenging";
+            reason = "Saturn may limit finances";
           }
-          break
+          break;
 
         case "personal":
           if (dayOfWeek === 1 || dayOfWeek === 3) {
-            energy = "favorable"
-            reason = "Good time for personal matters"
+            energy = "favorable";
+            reason = "Good time for personal matters";
           }
-          break
+          break;
       }
 
       recommendations.push({
         date,
         energy,
         reason,
-      })
+      });
     }
 
-    return recommendations
-  }
+    return recommendations;
+  };
 
   // Function to get favorable days for specific task
   const getTaskDays = (task: Task) => {
-    const recommendations = getTaskRecommendations(task.category)
-    const favorable = recommendations.filter((r) => r.energy === "favorable")
-    const challenging = recommendations.filter((r) => r.energy === "challenging")
+    const recommendations = getTaskRecommendations(task.category);
+    const favorable = recommendations.filter((r) => r.energy === "favorable");
+    const challenging = recommendations.filter(
+      (r) => r.energy === "challenging"
+    );
 
     return {
       favorable: favorable.slice(0, 3),
       challenging: challenging.slice(0, 2),
-    }
-  }
+    };
+  };
 
   const handleAddTask = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (newTaskText.trim()) {
       onAddTask({
         text: newTaskText.trim(),
         category: newTaskCategory,
-        priority: newTaskPriority,
+        // priority: newTaskPriority,
         date: "",
         completed: false,
-      })
-      setNewTaskText("")
-      setAiPrediction(null)
-      setIsAiSuggested(false)
-      setNewTaskCategory("personal")
+      });
+      setNewTaskText("");
+      setAiPrediction(null);
+      setIsAiSuggested(false);
+      setNewTaskCategory("personal");
     }
-  }
+  };
 
   const handleEditTask = (task: Task) => {
-    setEditingTask(task.id)
-    setEditText(task.text)
-    setEditCategory(task.category)
-    setEditPriority(task.priority)
-  }
+    setEditingTask(task.id);
+    setEditText(task.text);
+    setEditCategory(task.category);
+    // setEditPriority(task.priority);
+  };
 
   const handleSaveEdit = (taskId: string) => {
     if (editText.trim()) {
       onUpdateTask(taskId, {
         text: editText.trim(),
         category: editCategory,
-        priority: editPriority,
-      })
+        // priority: editPriority,
+      });
     }
-    setEditingTask(null)
-    setEditText("")
-  }
+    setEditingTask(null);
+    setEditText("");
+  };
 
   const handleCancelEdit = () => {
-    setEditingTask(null)
-    setEditText("")
-  }
+    setEditingTask(null);
+    setEditText("");
+  };
 
   const handleCategoryChange = (value: Task["category"]) => {
-    setNewTaskCategory(value)
-    setIsAiSuggested(false) // User manually changed category
-  }
+    setNewTaskCategory(value);
+    setIsAiSuggested(false); // User manually changed category
+  };
 
   const toggleCategory = (category: string) => {
-    const newOpenCategories = new Set(openCategories)
+    const newOpenCategories = new Set(openCategories);
     if (newOpenCategories.has(category)) {
-      newOpenCategories.delete(category)
+      newOpenCategories.delete(category);
     } else {
-      newOpenCategories.add(category)
+      newOpenCategories.add(category);
     }
-    setOpenCategories(newOpenCategories)
-  }
+    setOpenCategories(newOpenCategories);
+  };
 
-  const incompleteTasks = tasks.filter((task) => !task.completed)
-  const completedTasks = tasks.filter((task) => task.completed)
+  const incompleteTasks = tasks.filter((task) => !task.completed);
+  const completedTasks = tasks.filter((task) => task.completed);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
@@ -562,22 +613,37 @@ export function TaskList({
                   <User className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl text-gray-800">Welcome back, {birthData.name}</CardTitle>
+                  <CardTitle className="text-xl text-gray-800">
+                    Welcome back, {birthData.name}
+                  </CardTitle>
                   <p className="text-gray-600 text-sm">
-                    Born {format(birthData.dateOfBirth, "MMMM d, yyyy")} in {birthData.placeOfBirth}
+                    Born {format(birthData.dateOfBirth, "MMMM d, yyyy")} in{" "}
+                    {birthData.placeOfBirth}
                   </p>
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button onClick={onNavigateToProfile} variant="outline" className="bg-white/50">
+                <Button
+                  onClick={onNavigateToProfile}
+                  variant="outline"
+                  className="bg-white/50"
+                >
                   <User className="w-4 h-4 mr-2" />
                   Profile
                 </Button>
-                <Button onClick={onNavigateToCalendar} variant="outline" className="bg-white/50">
+                <Button
+                  onClick={onNavigateToCalendar}
+                  variant="outline"
+                  className="bg-white/50"
+                >
                   <Calendar className="w-4 h-4 mr-2" />
                   Calendar
                 </Button>
-                <Button onClick={onLogout} variant="outline" className="text-red-600 hover:text-red-700 bg-white/50">
+                <Button
+                  onClick={onLogout}
+                  variant="outline"
+                  className="text-red-600 hover:text-red-700 bg-white/50"
+                >
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </Button>
@@ -596,7 +662,10 @@ export function TaskList({
                   <Plus className="w-5 h-5" />
                   Add New Task
                   {aiPrediction && (
-                    <Badge variant="secondary" className="ml-2 bg-purple-100 text-purple-700">
+                    <Badge
+                      variant="secondary"
+                      className="ml-2 bg-purple-100 text-purple-700"
+                    >
                       <Brain className="w-3 h-3 mr-1" />
                       AI: {aiPrediction.confidence}%
                     </Badge>
@@ -614,16 +683,29 @@ export function TaskList({
 
                   <div className="flex gap-2">
                     <div className="flex-1 relative">
-                      <Select value={newTaskCategory} onValueChange={handleCategoryChange}>
-                        <SelectTrigger className={`${isAiSuggested ? "ring-2 ring-purple-200 bg-purple-50" : ""}`}>
+                      <Select
+                        value={newTaskCategory}
+                        onValueChange={handleCategoryChange}
+                      >
+                        <SelectTrigger
+                          className={`${
+                            isAiSuggested
+                              ? "ring-2 ring-purple-200 bg-purple-50"
+                              : ""
+                          }`}
+                        >
                           <SelectValue placeholder="Category" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="work">🏢 Work</SelectItem>
                           <SelectItem value="personal">👤 Personal</SelectItem>
                           <SelectItem value="health">💪 Health</SelectItem>
-                          <SelectItem value="creativity">🎨 Creativity</SelectItem>
-                          <SelectItem value="relationships">❤️ Relationships</SelectItem>
+                          <SelectItem value="creativity">
+                            🎨 Creativity
+                          </SelectItem>
+                          <SelectItem value="relationships">
+                            ❤️ Relationships
+                          </SelectItem>
                           <SelectItem value="finance">💰 Finance</SelectItem>
                         </SelectContent>
                       </Select>
@@ -634,9 +716,11 @@ export function TaskList({
                       )}
                     </div>
 
-                    <Select
+                    {/* <Select
                       value={newTaskPriority}
-                      onValueChange={(value: Task["priority"]) => setNewTaskPriority(value)}
+                      onValueChange={(value: Task["priority"]) =>
+                        setNewTaskPriority(value)
+                      }
                     >
                       <SelectTrigger className="w-24">
                         <SelectValue />
@@ -646,7 +730,7 @@ export function TaskList({
                         <SelectItem value="medium">🚩 Medium</SelectItem>
                         <SelectItem value="high">🚩 High</SelectItem>
                       </SelectContent>
-                    </Select>
+                    </Select> */}
 
                     <Button
                       type="submit"
@@ -662,8 +746,11 @@ export function TaskList({
                       <div className="flex items-center gap-2 text-sm text-purple-700">
                         <Brain className="w-4 h-4" />
                         <span>
-                          AI recommends <strong>{getCategoryName(aiPrediction.category)}</strong> category (confidence:{" "}
-                          {aiPrediction.confidence}%)
+                          AI recommends{" "}
+                          <strong>
+                            {getCategoryName(aiPrediction.category)}
+                          </strong>{" "}
+                          category (confidence: {aiPrediction.confidence}%)
                         </span>
                       </div>
                     </div>
@@ -675,17 +762,24 @@ export function TaskList({
             {/* Active Tasks */}
             <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
               <CardHeader>
-                <CardTitle className="text-lg text-gray-800">Active Tasks ({incompleteTasks.length})</CardTitle>
+                <CardTitle className="text-lg text-gray-800">
+                  Active Tasks ({incompleteTasks.length})
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {incompleteTasks.length === 0 ? (
-                    <p className="text-gray-500 text-center py-8">No active tasks</p>
+                    <p className="text-gray-500 text-center py-8">
+                      No active tasks
+                    </p>
                   ) : (
                     incompleteTasks.map((task) => {
-                      const taskDays = getTaskDays(task)
+                      const taskDays = getTaskDays(task);
                       return (
-                        <div key={task.id} className="p-3 bg-gray-50 rounded-lg border">
+                        <div
+                          key={task.id}
+                          className="p-3 bg-gray-50 rounded-lg border"
+                        >
                           {editingTask === task.id ? (
                             // Edit Mode
                             <div className="space-y-3">
@@ -694,40 +788,61 @@ export function TaskList({
                                 onChange={(e) => setEditText(e.target.value)}
                                 className="w-full"
                                 onKeyDown={(e) => {
-                                  if (e.key === "Enter") handleSaveEdit(task.id)
-                                  if (e.key === "Escape") handleCancelEdit()
+                                  if (e.key === "Enter")
+                                    handleSaveEdit(task.id);
+                                  if (e.key === "Escape") handleCancelEdit();
                                 }}
                               />
                               <div className="flex gap-2">
                                 <Select
                                   value={editCategory}
-                                  onValueChange={(value: Task["category"]) => setEditCategory(value)}
+                                  onValueChange={(value: Task["category"]) =>
+                                    setEditCategory(value)
+                                  }
                                 >
                                   <SelectTrigger className="flex-1">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="work">🏢 Work</SelectItem>
-                                    <SelectItem value="personal">👤 Personal</SelectItem>
-                                    <SelectItem value="health">💪 Health</SelectItem>
-                                    <SelectItem value="creativity">🎨 Creativity</SelectItem>
-                                    <SelectItem value="relationships">❤️ Relationships</SelectItem>
-                                    <SelectItem value="finance">💰 Finance</SelectItem>
+                                    <SelectItem value="work">
+                                      🏢 Work
+                                    </SelectItem>
+                                    <SelectItem value="personal">
+                                      👤 Personal
+                                    </SelectItem>
+                                    <SelectItem value="health">
+                                      💪 Health
+                                    </SelectItem>
+                                    <SelectItem value="creativity">
+                                      🎨 Creativity
+                                    </SelectItem>
+                                    <SelectItem value="relationships">
+                                      ❤️ Relationships
+                                    </SelectItem>
+                                    <SelectItem value="finance">
+                                      💰 Finance
+                                    </SelectItem>
                                   </SelectContent>
                                 </Select>
-                                <Select
+                                {/* <Select
                                   value={editPriority}
-                                  onValueChange={(value: Task["priority"]) => setEditPriority(value)}
+                                  onValueChange={(value: Task["priority"]) =>
+                                    setEditPriority(value)
+                                  }
                                 >
                                   <SelectTrigger className="w-20">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="low">🚩 Low</SelectItem>
-                                    <SelectItem value="medium">🚩 Medium</SelectItem>
-                                    <SelectItem value="high">🚩 High</SelectItem>
+                                    <SelectItem value="medium">
+                                      🚩 Medium
+                                    </SelectItem>
+                                    <SelectItem value="high">
+                                      🚩 High
+                                    </SelectItem>
                                   </SelectContent>
-                                </Select>
+                                </Select> */}
                                 <Button
                                   size="sm"
                                   onClick={() => handleSaveEdit(task.id)}
@@ -735,7 +850,11 @@ export function TaskList({
                                 >
                                   <CheckCircle2 className="w-4 h-4" />
                                 </Button>
-                                <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={handleCancelEdit}
+                                >
                                   <X className="w-4 h-4" />
                                 </Button>
                               </div>
@@ -751,18 +870,32 @@ export function TaskList({
                                 />
 
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-gray-800 font-medium truncate mb-1">{task.text}</p>
+                                  <p className="text-gray-800 font-medium truncate mb-1">
+                                    {task.text}
+                                  </p>
                                   <div className="flex items-center gap-2">
-                                    <Badge className={`${categoryColors[task.category]} text-xs`}>
+                                    <Badge
+                                      className={`${
+                                        categoryColors[task.category]
+                                      } text-xs`}
+                                    >
                                       {categoryIcons[task.category]}
-                                      <span className="ml-1">{getCategoryName(task.category)}</span>
+                                      <span className="ml-1">
+                                        {getCategoryName(task.category)}
+                                      </span>
                                     </Badge>
-                                    <span className="text-xs ml-1">{getPriorityFlag(task.priority)}</span>
+                                    {/* <span className="text-xs ml-1">
+                                      {getPriorityFlag(task.priority)}
+                                    </span> */}
                                   </div>
                                 </div>
 
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="sm" onClick={() => handleEditTask(task)}>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditTask(task)}
+                                  >
                                     <Edit3 className="w-4 h-4" />
                                   </Button>
                                   <Button
@@ -781,18 +914,26 @@ export function TaskList({
                                 {taskDays.favorable.length > 0 && (
                                   <div className="flex items-center gap-1">
                                     <TrendingUp className="w-3 h-3 text-green-600" />
-                                    <span className="text-green-700 font-medium">Favorable:</span>
+                                    <span className="text-green-700 font-medium">
+                                      Favorable:
+                                    </span>
                                     <span className="text-green-600">
-                                      {taskDays.favorable.map((day) => format(day.date, "MMM d")).join(", ")}
+                                      {taskDays.favorable
+                                        .map((day) => format(day.date, "MMM d"))
+                                        .join(", ")}
                                     </span>
                                   </div>
                                 )}
                                 {taskDays.challenging.length > 0 && (
                                   <div className="flex items-center gap-1">
                                     <AlertTriangle className="w-3 h-3 text-red-600" />
-                                    <span className="text-red-700 font-medium">Challenging:</span>
+                                    <span className="text-red-700 font-medium">
+                                      Challenging:
+                                    </span>
                                     <span className="text-red-600">
-                                      {taskDays.challenging.map((day) => format(day.date, "MMM d")).join(", ")}
+                                      {taskDays.challenging
+                                        .map((day) => format(day.date, "MMM d"))
+                                        .join(", ")}
                                     </span>
                                   </div>
                                 )}
@@ -800,7 +941,7 @@ export function TaskList({
                             </div>
                           )}
                         </div>
-                      )
+                      );
                     })
                   )}
                 </div>
@@ -811,15 +952,25 @@ export function TaskList({
             {completedTasks.length > 0 && (
               <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
                 <CardHeader>
-                  <CardTitle className="text-lg text-gray-800">Completed Tasks ({completedTasks.length})</CardTitle>
+                  <CardTitle className="text-lg text-gray-800">
+                    Completed Tasks ({completedTasks.length})
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {completedTasks.map((task) => (
-                      <div key={task.id} className="p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div
+                        key={task.id}
+                        className="p-3 bg-green-50 rounded-lg border border-green-200"
+                      >
                         <div className="flex items-center gap-3">
-                          <Checkbox checked={task.completed} onCheckedChange={() => onToggleTask(task.id)} />
-                          <span className="flex-1 text-gray-600 line-through">{task.text}</span>
+                          <Checkbox
+                            checked={task.completed}
+                            onCheckedChange={() => onToggleTask(task.id)}
+                          />
+                          <span className="flex-1 text-gray-600 line-through">
+                            {task.text}
+                          </span>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -846,14 +997,19 @@ export function TaskList({
                   Daily Forecast
                 </CardTitle>
                 <p className="text-gray-600 text-sm">
-                  {format(new Date(), "EEEE, MMMM d, yyyy")} • {getZodiacSign(birthData.dateOfBirth).emoji}{" "}
+                  {format(new Date(), "EEEE, MMMM d, yyyy")} •{" "}
+                  {getZodiacSign(birthData.dateOfBirth).emoji}{" "}
                   {getZodiacSign(birthData.dateOfBirth).sign}
                 </p>
               </CardHeader>
               <CardContent>
                 <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
                   <p className="text-gray-700 leading-relaxed">
-                    {generateAdvancedHoroscope(getZodiacSign(birthData.dateOfBirth).sign, birthData.name, new Date())}
+                    {generateAdvancedHoroscope(
+                      getZodiacSign(birthData.dateOfBirth).sign,
+                      birthData.name,
+                      new Date()
+                    )}
                   </p>
                 </div>
               </CardContent>
@@ -866,18 +1022,30 @@ export function TaskList({
                   <Sparkles className="w-5 h-5" />
                   Astrological Recommendations
                 </CardTitle>
-                <p className="text-gray-600 text-sm">Best days for your tasks in the next 2 weeks</p>
+                <p className="text-gray-600 text-sm">
+                  Best days for your tasks in the next 2 weeks
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {Array.from(new Set(incompleteTasks.map((task) => task.category))).map((category) => {
-                    const recommendations = getTaskRecommendations(category)
-                    const favorableDays = recommendations.filter((r) => r.energy === "favorable")
-                    const challengingDays = recommendations.filter((r) => r.energy === "challenging")
-                    const isOpen = openCategories.has(category)
+                  {Array.from(
+                    new Set(incompleteTasks.map((task) => task.category))
+                  ).map((category) => {
+                    const recommendations = getTaskRecommendations(category);
+                    const favorableDays = recommendations.filter(
+                      (r) => r.energy === "favorable"
+                    );
+                    const challengingDays = recommendations.filter(
+                      (r) => r.energy === "challenging"
+                    );
+                    const isOpen = openCategories.has(category);
 
                     return (
-                      <Collapsible key={category} open={isOpen} onOpenChange={() => toggleCategory(category)}>
+                      <Collapsible
+                        key={category}
+                        open={isOpen}
+                        onOpenChange={() => toggleCategory(category)}
+                      >
                         <CollapsibleTrigger asChild>
                           <Button
                             variant="ghost"
@@ -885,12 +1053,22 @@ export function TaskList({
                           >
                             <div className="flex items-center gap-2">
                               {categoryIcons[category]}
-                              <span className="font-semibold text-gray-800">{getCategoryName(category)}</span>
+                              <span className="font-semibold text-gray-800">
+                                {getCategoryName(category)}
+                              </span>
                               <Badge variant="secondary" className="text-xs">
-                                {incompleteTasks.filter((task) => task.category === category).length}
+                                {
+                                  incompleteTasks.filter(
+                                    (task) => task.category === category
+                                  ).length
+                                }
                               </Badge>
                             </div>
-                            {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                            {isOpen ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
                           </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="space-y-3 pt-3">
@@ -898,13 +1076,22 @@ export function TaskList({
                             <div className="p-3 bg-green-50 rounded-lg border border-green-200">
                               <div className="flex items-center gap-2 mb-2">
                                 <TrendingUp className="w-4 h-4 text-green-600" />
-                                <span className="text-sm font-medium text-green-800">Favorable Days:</span>
+                                <span className="text-sm font-medium text-green-800">
+                                  Favorable Days:
+                                </span>
                               </div>
                               <div className="space-y-1">
                                 {favorableDays.slice(0, 3).map((rec) => (
-                                  <div key={rec.date.toISOString()} className="text-sm text-green-700">
-                                    <span className="font-medium">{format(rec.date, "EEEE, MMMM d")}</span>
-                                    <span className="text-green-600 ml-2">- {rec.reason}</span>
+                                  <div
+                                    key={rec.date.toISOString()}
+                                    className="text-sm text-green-700"
+                                  >
+                                    <span className="font-medium">
+                                      {format(rec.date, "EEEE, MMMM d")}
+                                    </span>
+                                    <span className="text-green-600 ml-2">
+                                      - {rec.reason}
+                                    </span>
                                   </div>
                                 ))}
                               </div>
@@ -915,13 +1102,22 @@ export function TaskList({
                             <div className="p-3 bg-red-50 rounded-lg border border-red-200">
                               <div className="flex items-center gap-2 mb-2">
                                 <AlertTriangle className="w-4 h-4 text-red-600" />
-                                <span className="text-sm font-medium text-red-800">Challenging Days:</span>
+                                <span className="text-sm font-medium text-red-800">
+                                  Challenging Days:
+                                </span>
                               </div>
                               <div className="space-y-1">
                                 {challengingDays.slice(0, 2).map((rec) => (
-                                  <div key={rec.date.toISOString()} className="text-sm text-red-700">
-                                    <span className="font-medium">{format(rec.date, "EEEE, MMMM d")}</span>
-                                    <span className="text-red-600 ml-2">- {rec.reason}</span>
+                                  <div
+                                    key={rec.date.toISOString()}
+                                    className="text-sm text-red-700"
+                                  >
+                                    <span className="font-medium">
+                                      {format(rec.date, "EEEE, MMMM d")}
+                                    </span>
+                                    <span className="text-red-600 ml-2">
+                                      - {rec.reason}
+                                    </span>
                                   </div>
                                 ))}
                               </div>
@@ -929,7 +1125,7 @@ export function TaskList({
                           )}
                         </CollapsibleContent>
                       </Collapsible>
-                    )
+                    );
                   })}
 
                   {incompleteTasks.length === 0 && (
@@ -945,5 +1141,5 @@ export function TaskList({
         </div>
       </div>
     </div>
-  )
+  );
 }

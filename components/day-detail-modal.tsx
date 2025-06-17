@@ -1,29 +1,37 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
-import { X, Plus, Trash2, Sparkles, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
-import { format } from "date-fns"
-import type { Task } from "@/app/page"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  X,
+  Plus,
+  Trash2,
+  Sparkles,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
+import { format } from "date-fns";
+import type { Task } from "@/app/page";
 
 interface DayDetailModalProps {
-  date: Date
-  energy: string
-  tasks: Task[]
+  date: Date;
+  energy: string;
+  tasks: Task[];
   recommendations: {
-    favorable: string[]
-    avoid: string[]
-    energy: "favorable" | "challenging" | "neutral"
-  }
-  onClose: () => void
-  onAddTask: (task: Omit<Task, "id">) => void
-  onToggleTask: (taskId: string) => void
-  onDeleteTask: (taskId: string) => void
+    favorable: string[];
+    avoid: string[];
+    energy: "favorable" | "challenging" | "neutral";
+  };
+  onClose: () => void;
+  onAddTask: (task: Omit<Task, "id">) => void;
+  onToggleTask: (taskId: string) => void;
+  onDeleteTask: (taskId: string) => void;
 }
 
 export function DayDetailModal({
@@ -36,7 +44,7 @@ export function DayDetailModal({
   onToggleTask,
   onDeleteTask,
 }: DayDetailModalProps) {
-  const [newTaskText, setNewTaskText] = useState("")
+  const [newTaskText, setNewTaskText] = useState("");
 
   const getEnergyInfo = (energy: string) => {
     switch (energy) {
@@ -47,7 +55,7 @@ export function DayDetailModal({
           description: "Good day for active actions and important decisions.",
           color: "text-green-700",
           bgColor: "bg-green-50",
-        }
+        };
       case "challenging":
         return {
           icon: <AlertTriangle className="w-5 h-5 text-red-600" />,
@@ -55,7 +63,7 @@ export function DayDetailModal({
           description: "Be careful, avoid important decisions.",
           color: "text-red-700",
           bgColor: "bg-red-50",
-        }
+        };
       default:
         return {
           icon: <CheckCircle className="w-5 h-5 text-gray-600" />,
@@ -63,9 +71,9 @@ export function DayDetailModal({
           description: "Balanced day for routine tasks.",
           color: "text-gray-700",
           bgColor: "bg-gray-50",
-        }
+        };
     }
-  }
+  };
 
   const getCategoryName = (category: string) => {
     const names = {
@@ -75,9 +83,9 @@ export function DayDetailModal({
       creativity: "Creativity",
       relationships: "Relationships",
       finance: "Finance",
-    }
-    return names[category as keyof typeof names] || category
-  }
+    };
+    return names[category as keyof typeof names] || category;
+  };
 
   const getCategoryEmoji = (category: string) => {
     const emojis = {
@@ -87,33 +95,40 @@ export function DayDetailModal({
       creativity: "🎨",
       relationships: "❤️",
       finance: "💰",
-    }
-    return emojis[category as keyof typeof emojis] || "📝"
-  }
+    };
+    return emojis[category as keyof typeof emojis] || "📝";
+  };
 
-  const energyInfo = getEnergyInfo(energy)
+  const energyInfo = getEnergyInfo(energy);
 
   const handleAddTask = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (newTaskText.trim()) {
       onAddTask({
         text: newTaskText.trim(),
         date: format(date, "yyyy-MM-dd"),
         completed: false,
         category: "personal",
-        priority: "medium",
-      })
-      setNewTaskText("")
+        // priority: "medium",
+      });
+      setNewTaskText("");
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <Card className="w-full max-w-lg bg-white shadow-2xl border-0 max-h-[90vh] overflow-hidden">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl text-gray-800">{format(date, "EEEE, MMMM d")}</CardTitle>
-            <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <CardTitle className="text-xl text-gray-800">
+              {format(date, "EEEE, MMMM d")}
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700"
+            >
               <X className="w-5 h-5" />
             </Button>
           </div>
@@ -124,16 +139,22 @@ export function DayDetailModal({
           <div className={`p-4 rounded-lg ${energyInfo.bgColor}`}>
             <div className="flex items-center gap-3 mb-2">
               {energyInfo.icon}
-              <h3 className={`font-semibold ${energyInfo.color}`}>{energyInfo.title}</h3>
+              <h3 className={`font-semibold ${energyInfo.color}`}>
+                {energyInfo.title}
+              </h3>
             </div>
-            <p className={`text-sm ${energyInfo.color} mb-3`}>{energyInfo.description}</p>
+            <p className={`text-sm ${energyInfo.color} mb-3`}>
+              {energyInfo.description}
+            </p>
 
             {/* Favorable categories */}
             {recommendations.favorable.length > 0 && (
               <div className="mb-3">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-800">Favorable:</span>
+                  <span className="text-sm font-medium text-green-800">
+                    Favorable:
+                  </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {recommendations.favorable.map((category) => (
@@ -154,7 +175,9 @@ export function DayDetailModal({
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="w-4 h-4 text-red-600" />
-                  <span className="text-sm font-medium text-red-800">Better to avoid:</span>
+                  <span className="text-sm font-medium text-red-800">
+                    Better to avoid:
+                  </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {recommendations.avoid.map((category) => (
@@ -173,7 +196,9 @@ export function DayDetailModal({
 
           {/* Tasks Section */}
           <div>
-            <h3 className="font-semibold text-gray-800 mb-3">Tasks for this day</h3>
+            <h3 className="font-semibold text-gray-800 mb-3">
+              Tasks for this day
+            </h3>
 
             {/* Add Task Form */}
             <form onSubmit={handleAddTask} className="flex gap-2 mb-4">
@@ -183,7 +208,11 @@ export function DayDetailModal({
                 placeholder="Add task..."
                 className="flex-1"
               />
-              <Button type="submit" size="sm" className="bg-purple-500 hover:bg-purple-600">
+              <Button
+                type="submit"
+                size="sm"
+                className="bg-purple-500 hover:bg-purple-600"
+              >
                 <Plus className="w-4 h-4" />
               </Button>
             </form>
@@ -191,12 +220,26 @@ export function DayDetailModal({
             {/* Task List */}
             <div className="space-y-2">
               {tasks.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">No tasks for this day</p>
+                <p className="text-gray-500 text-sm text-center py-4">
+                  No tasks for this day
+                </p>
               ) : (
                 tasks.map((task) => (
-                  <div key={task.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <Checkbox checked={task.completed} onCheckedChange={() => onToggleTask(task.id)} />
-                    <span className={`flex-1 ${task.completed ? "line-through text-gray-500" : "text-gray-800"}`}>
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                  >
+                    <Checkbox
+                      checked={task.completed}
+                      onCheckedChange={() => onToggleTask(task.id)}
+                    />
+                    <span
+                      className={`flex-1 ${
+                        task.completed
+                          ? "line-through text-gray-500"
+                          : "text-gray-800"
+                      }`}
+                    >
                       {task.text}
                     </span>
                     <Button
@@ -215,5 +258,5 @@ export function DayDetailModal({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
